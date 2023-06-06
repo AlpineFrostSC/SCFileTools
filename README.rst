@@ -30,15 +30,20 @@ Features
 
 Run it!
 -------
+For cloning and running the python directly:
+
 The only dependency I can think of off the top of my head is PyQT5. Feel free to have that already installed.
 Otherwise, it's in the requirements.txt
-
-I suppose you might also want to ensure that you have PowerShell installed if you want to use any of the features which
+I suppose you might also want to ensure that you have PowerShell installed in its default location if you want to use any of the features which
 depend on it.
 
-Fancy single executable (recommended!)
+For the portable executable, just grab it and run it!
+
+Fancy portable executable (recommended!)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 For Windoze. What, you expected something else?
+
+**No dependencies or external files required!**
 
 1. Installation:
     - No.
@@ -54,11 +59,12 @@ Probably also exclusively for Windows. Otherwise, this is a rabbit hole for *you
 
 1. Installation:
     - Clone the repository: `git clone https://github.com/AlpineFrostSC/SCFileTools.git`
-    - Install the required dependencies: `pip install -r requirements.txt`
+    - Install the required dependencies (if needed): `pip install -r requirements.txt`
 
 2. Run the Application:
     - Navigate to the project directory: `cd SCFileTools`
     - Launch the application: `python SCFileTools.py`
+    - Failure to run the application from within its directory may result in broken file references. No big deal.
 
 Then just look at things with your eyeballs and identify what you'd like to accomplish.
 Alternatively, read some docs at [docLocationNotFoundSryNotSry] for more information.
@@ -69,7 +75,7 @@ Some Guidance
 Let's take a look at the sections you see on the main window and the functions that those provide.
 
 First, please note the "Running as:" in the tile bar of the program. This indicates whether you have run the program as
-ADMIN or not. **This is an important point for one or more of the functions of the program.** But otherwise not a big deal.
+ADMIN or not. **This is an important point for one or more functions of the program.** But otherwise not a big deal.
 
 1. **Folder Paths**
     - These couple of lines allow you to choose where your main RSI directory and Shaders folders exist.
