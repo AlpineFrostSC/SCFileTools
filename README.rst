@@ -2,6 +2,11 @@
 SC File Fiddler ... *Fiddle around and find out!*
 =======================================
 
+
+.. image:: https://media.discordapp.net/attachments/957418022312767508/1115454905201733632/image.png
+   :align: center
+
+
 Wut?
 --------
 
