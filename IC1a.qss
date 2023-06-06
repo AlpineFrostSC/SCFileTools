@@ -1,0 +1,211 @@
+
+
+
+/*-----QWidget-----*/
+QWidget
+{
+	/*background-color: #0d2636;*/
+	color: #ffffff;
+	border-color: #1a587d;
+	/*background-image: url("./banner1.jpg");*/
+
+}
+
+
+QListWidget
+{
+background-color: #9B396BA7;
+color: #ffffff;
+
+}
+
+
+QMessageBox
+{
+
+background-color: #9B396BA7;
+color: #ffffff;
+icon:  url("./banner1.jpg");
+}
+
+QTableWidget
+{
+	background-color: #9B396BA7;
+	/*
+	background-color: transparent;
+	background-color: transparent;*/
+
+}
+
+QTableView {
+
+	background-color: #9B396BA7;
+	/*
+	background-color: transparent;
+	background-color: transparent;*/
+
+
+
+}
+
+QHeaderView::section {background-color: transparent;}
+QHeaderView {background-color: transparent;}
+QTableCornerButton::section {background-color: transparent;}
+
+QProgressBar
+{
+
+border-radius: 2px;
+background-color: #1A5A7F;
+
+}
+
+QProgressBar::chunk
+{
+
+border-radius: 2px;
+background-color: #3785ae;
+}
+
+QMainWindow
+{
+background-color: #0d2636;
+background-image: url("./banner1.jpg");
+background-repeat: no-repeat;
+background-position: top left;
+
+}
+
+
+
+
+/*-----QMenuBar-----*/
+QMenuBar
+{
+	background-color: #6692fc;
+	color: #000000;
+	border-color: #181c21;
+
+}
+
+
+QMenuBar::item
+{
+    background-color: transparent;
+
+}
+
+
+QMenuBar::item:selected
+{
+    background-color: #389bff;
+
+}
+
+
+QMenuBar::item:pressed
+{
+    background-color: #3a76b4;
+    border: 1px solid #5ab8a0;
+    margin-bottom: -1px;
+    padding-bottom: 1px;
+
+}
+
+
+/*-----QMenu-----*/
+QMenu
+{
+    background-color: #e1f4ff;
+    border: 1px solid;
+    color: #000;
+
+}
+
+
+QMenu::separator
+{
+    height: 1px;
+    background-color: #000;
+    color: #ffffff;
+    padding-left: 4px;
+    margin-left: 10px;
+    margin-right: 5px;
+
+}
+
+
+QMenu::item
+{
+    min-width : 150px;
+    padding: 3px 20px 3px 20px;
+
+}
+
+
+QMenu::item:selected
+{
+    background-color: #3a76b4;
+    color: #ffffff;
+
+}
+
+
+QMenu::item:disabled
+{
+    color: #262626;
+
+}
+
+
+/*-----QPushButton-----*/
+QPushButton
+{
+	background-color: #1A5A7F;
+	
+	color: #ffffff;
+	/*border-style: solid;*/
+	border-color: #ffaaff;
+	font-weight: bold;
+	border-radius: 3px;
+	font-size: 12px;
+	font-family: Arial;
+
+}
+
+QPushButton:disabled {
+    background-color: #727c8d;
+}
+
+QPushButton::hover
+{
+	background-color: #188dd8;
+
+}
+
+
+QPushButton::pressed
+{
+	background-color: #1a587d;
+
+}
+
+
+/*-----QLineEdit-----*/
+QLineEdit
+{
+	background-color: #12160c;
+	color: #ffffff;
+	border: 1px solid #6692fc;
+	padding: 3px;
+
+}
+
+QTextEdit
+{
+background-color: #12160c;
+color: #ffffff;
+border: 1px solid #6692fc;
+padding: 3px
+
+}
