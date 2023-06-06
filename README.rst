@@ -11,8 +11,9 @@ Wut?
 
 Well, *fear no more*! SC File Fiddler is here to help!
 
-SC File Fiddler is a collection of simple tools for performing those standard
-yet tedious tasks when troubleshooting Star Citizen.
+**SC File Fiddler is a collection of simple tools for performing those standard
+yet tedious tasks when troubleshooting Star Citizen.**
+
 
 Browse this documentation to see what you can do with SCFF, and be sure
 to look over the `Some Guidance <#some-guidance>`_ section to get a more detailed explanation of the functions.
