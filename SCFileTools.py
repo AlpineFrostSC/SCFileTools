@@ -1,12 +1,25 @@
 import sys
 import os
+
+os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+os.environ["QT_SCREEN_SCALE_FACTORS"] = "1"
+os.environ["QT_SCALE_FACTOR"] = "1"
+
 import shutil
 import ctypes
 import subprocess
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QThread, QThreadPool, QRunnable, pyqtSignal
+from PyQt5.QtGui import QFont, QFontDatabase
+
 from PyQt5.uic import loadUi
 import time
+
+import logging
+import threading
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+o = logging.getLogger(__name__)
 
 import LauncherHelper
 
@@ -95,11 +108,41 @@ def permission_level():
         return "Non-Admin"
 
 
+class Task2(QRunnable):
+    def __init__(self, target_method):
+        super().__init__()
+        self.target_method = target_method
+
+    def run(self):
+        # Execute the target method
+        self.target_method()
+
+# Custom task class implementing QRunnable
+class Task(QRunnable):
+    def __init__(self, target_method, *args, **kwargs):
+        super().__init__()
+        self.target_method = target_method
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        # Execute the target method with the provided arguments
+        self.target_method(*self.args, **self.kwargs)
+
+
 class SCFF(QMainWindow):
+    info_signal = pyqtSignal(str, str)
     def __init__(self):
         super().__init__()
+
+        self.thread_pool = QThreadPool()
+
+
         uipath = get_resource_path("form.ui")
         loadUi(uipath, self)
+
+
+        self.info_signal.connect(self.info)
 
         self.current_user = os.getenv('USERNAME')
 
@@ -107,9 +150,6 @@ class SCFF(QMainWindow):
 
         self.main_directory = r"F:\Games\Roberts Space Industries"
         self.shaders_directory = os.path.join(os.getenv('LOCALAPPDATA'), "Star Citizen")
-        self.test_directory = rf"C:\Users\{self.current_user}\PycharmProjects\ChatGPTStuff\sc_file_management\SCFileTools\Test"
-        # return the last two subdirectories from self.test_directory
-        self.test_directory_last_two = os.path.join(*self.test_directory.split(os.path.sep)[-2:])
 
         self.LIVE_directory = os.path.join(self.main_directory, "StarCitizen", "LIVE")
         self.PTU_directory = os.path.join(self.main_directory, "StarCitizen", "PTU")
@@ -126,6 +166,9 @@ class SCFF(QMainWindow):
 
         self.misc_log_env = "LIVE"
 
+        self.launcher_handle = None
+        self.launcher_exe = None
+
         self.testing = True
 
         self.is_title_bar_hidden = False
@@ -139,15 +182,16 @@ class SCFF(QMainWindow):
         # Connect buttons to functions
         self.pb_setMainDir.clicked.connect(self.select_main_directory)
         self.pb_setShadersDir.clicked.connect(self.select_shaders_directory)
-        self.pb_setTestDir.clicked.connect(self.select_test_directory)
         self.pb_deleteShaders.clicked.connect(self.delete_shaders)
-        self.pb_prepTest.clicked.connect(self.prep_test_data)
+        self.pb_openShaders.clicked.connect(lambda: subprocess.Popen(f'explorer {self.shaders_directory}'))
+        self.pb_deleteUser.clicked.connect(self.delete_user_folder)
         self.pb_EXIT.clicked.connect(self.close)  # Connect EXIT button to close the program
         self.pb_MINIMIZE.clicked.connect(self.showMinimized)  # Connect MINIMIZE button to minimize the program
         self.pb_misc_launcher1.clicked.connect(lambda: self.reset_launcher(self.cb_launcher_deep.isChecked()))
         self.pb_misc_closeLauncher.clicked.connect(self.close_launcher)
         self.pb_misc_viewLog.clicked.connect(self.open_game_log)
         self.pb_misc_consoleLog.clicked.connect(self.powershell_log)
+        self.pb_misc_recentErrorLog.clicked.connect(self.open_crash_log)
         self.pb_misc_relaunchLauncher.clicked.connect(self.relaunch_launcher)
 
         self.pb_EAC_SC.clicked.connect(lambda: self.nuke_EAC(self.pb_EAC_SC))
@@ -155,14 +199,13 @@ class SCFF(QMainWindow):
         self.pb_EAC_programFiles.clicked.connect(lambda: self.nuke_EAC(self.pb_EAC_programFiles))
         self.pb_EAC_all.clicked.connect(lambda: self.nuke_EAC(self.pb_EAC_all))
 
-        self.rb_misc_LIVE.clicked.connect(lambda: self.set_misc_log_env("LIVE"))
-        self.rb_misc_PTU.clicked.connect(lambda: self.set_misc_log_env("PTU"))
-        self.rb_misc_EPTU.clicked.connect(lambda: self.set_misc_log_env("EPTU"))
+        self.rb_misc_LIVE.clicked.connect(lambda: setattr(self, "misc_log_env", "LIVE"))
+        self.rb_misc_PTU.clicked.connect(lambda: setattr(self, "misc_log_env", "PTU"))
+        self.rb_misc_EPTU.clicked.connect(lambda: setattr(self, "misc_log_env", "EPTU"))
 
         # Set the text of the labels to the current paths
         self.l_path_main.setText(self.RSIPrefix + self.main_directory)
         self.l_path_shaders.setText(self.shadersPrefix + self.shaders_directory.replace(self.current_user, "[user]"))
-        self.l_testDir.setText('...\\' + self.test_directory_last_two)
 
         self.l_permission.setText("Running as: " + permission_level())
 
@@ -174,10 +217,23 @@ class SCFF(QMainWindow):
         self.dragging_offset = None
 
         self.setStyleSheet("QGroupBox {font-size: 14px;}")
+        self.info_style=QFont("Lucida Console", 10)
+
+        self.l_info_1.setFont(self.info_style)
+        self.l_info_2.setFont(self.info_style)
 
         self.adjustSize()
 
         self.toggle_title_bar()
+
+        self.info(preset=0)
+
+    def show_info_message(self, message):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setText(message)
+        msg.setWindowTitle("Information")
+        msg.exec_()
 
     def select_main_directory(self):
         """
@@ -208,11 +264,66 @@ class SCFF(QMainWindow):
             self.test_directory = directory
             self.l_testDir.setText(directory)
 
+    def delete_user_folder(self):
+
+        enviro_list = []
+        if self.cb_user_LIVE.isChecked():
+            enviro_list.append("LIVE")
+        if self.cb_user_PTU.isChecked():
+            enviro_list.append("PTU")
+        if self.cb_user_EPTU.isChecked():
+            enviro_list.append("EPTU")
+
+        main_dir = os.path.join(self.main_directory, 'StarCitizen')
+
+        fc = 0
+        dc = 0
+
+        for env in enviro_list:
+            folders_to_keep = []
+            files_to_keep = []
+            kept = []
+
+            user_dir = os.path.join(main_dir, env, "USER")
+            cli_0_dir = os.path.join(user_dir, "Client", "0")
+
+            if self.cb_user_retainBindingsEx.isChecked():
+                folders_to_keep.append(os.path.join(cli_0_dir, "Controls", "Mappings"))
+                kept.append("Exported Bindings")
+            if self.cb_user_retainBindingsCur.isChecked():
+                files_to_keep.append(os.path.join(cli_0_dir, "Profiles", "default", "actionmaps.xml"))
+                kept.append("Current Bindings")
+            if self.cb_user_retainSettings.isChecked():
+                files_to_keep.append(os.path.join(cli_0_dir, "Profiles", "default", "attributes.xml"))
+                kept.append("Settings")
+
+            for root, dirs, files in os.walk(user_dir, topdown=False):
+                for name in files:
+                    file_path = os.path.join(root, name)
+                    if file_path not in files_to_keep and root not in folders_to_keep:
+                        os.remove(file_path)
+                        fc += 1
+
+                for name in dirs:
+                    dir_path = os.path.join(root, name)
+                    if not os.listdir(dir_path) and dir_path not in folders_to_keep:
+                        os.rmdir(dir_path)
+                        dc += 1
+        self.info(clear_unused=True)
+        if len(enviro_list) > 0:
+            self.info(f"Deleted {fc} files and {dc} folders.")
+            if len(kept) > 0:
+                self.info(t2="Kept: " + ", ".join(kept))
+            else:
+                self.info(t2="Kept nothing.")
+        else:
+            self.info("No environment selected.")
+
     def delete_shaders(self):
         """
         Delete shaders based on the selected option.
         """
-        done=False
+        done = False
         if self.rb_s_All.isChecked():
             folders = [f for f in os.listdir(self.shaders_directory) if
                        os.path.isdir(os.path.join(self.shaders_directory, f))]
@@ -220,55 +331,76 @@ class SCFF(QMainWindow):
                 if folder.startswith("sc-alpha"):
                     folder_path = os.path.join(self.shaders_directory, folder)
                     shutil.rmtree(folder_path)
-                    print(f"Deleted folder: {folder_path}")
-                    done=True
+
+                    done = True
+            self.info(clear_unused=True)
+            self.info(t1=f"Deleted all shaders!", t2=f"({len(folders)} folders)")
         elif self.rb_s_Pick.isChecked():
             selected_folder = QFileDialog.getExistingDirectory(self, "Select Folder to Delete", self.shaders_directory)
             if selected_folder:
                 shutil.rmtree(selected_folder)
-                print(f"Deleted folder: {selected_folder}")
-                done=True
-
-        if done:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            msg.setInformativeText("Shaders have been deleted")
-            msg.setWindowTitle("Shaders Deleted")
-            msg.exec_()
-        else:
-            print("No shaders deleted...")
-
-
-    def set_misc_log_env(self, env):
-        """
-        Set the miscellaneous log environment.
-
-        Args:
-            env (str): Log environment ("LIVE", "PTU", "EPTU").
-        """
-        self.misc_log_env = env
+                done = True
+                self.info(clear_unused=True)
+                self.info(t1=f"Deleted shaders in:", t2=f"{selected_folder}")
 
     def open_game_log(self):
         """
         Open the game log file in the default program.
         """
-        logpath = os.path.join(self.main_directory, "StarCitizen", self.misc_log_env, "Game.log")
-        # Open the file in the default program
-        try:
-            os.startfile(logpath)
-        except:
-            print("Failed to open log file. Environment not found?")
+
+        envpath = os.path.join(self.main_directory, "StarCitizen", self.misc_log_env)
+        logpath = os.path.join(envpath, "Game.log")
+        self.info(clear_unused=True)
+        if not os.path.isfile(logpath):
+            self.info(f"Log file not found...")
+            if not os.path.isdir(envpath):
+                self.info(t2=f"Environment {self.misc_log_env} folder not found...")
+            return
+        else:
+            try:
+                os.startfile(logpath)
+                self.info(f"Opened {logpath}")
+            except:
+                o.error("Failed to open log file.")
+    def open_crash_log(self):
+        """
+        Open the most recent crash log.
+        """
+
+        logpath = os.path.join(self.shaders_directory, "Crashes")
+        logfile = os.path.join(logpath,"Game.log")
+
+        self.info(clear_unused=True)
+        if not os.path.isfile(logfile):
+            self.info(f"Log file not found...")
+            if not os.path.isdir(logpath):
+                self.info(t2=f"Crash folder not found.")
+            return
+        else:
+            try:
+                os.startfile(logfile)
+                self.info(f"Opened {logfile}")
+            except:
+                o.error("Failed to open log file.")
 
     def powershell_log(self):
         """
         Open PowerShell and display the game log in real-time.
         """
         logpath = os.path.join(self.main_directory, "StarCitizen", self.misc_log_env, "Game.log")
+
+        if not os.path.isfile(logpath):
+            self.info(f"Log file not found...")
+            if not os.path.isdir(self.misc_log_env):
+                self.info(t2=f"Environment {self.misc_log_env} folder not found...")
+            return
+
         file_path = logpath.replace("\\", "\\\\")
         # full path to powershell
         pwershellpath = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
         command = f'start {pwershellpath} Get-Content \'{file_path}\' -Wait'
-        print(command)
+        self.info(clear_unused=True)
+        self.info(t1="Opening PowerShell...", t2=f"Log file: {logpath}")
         subprocess.call(command, shell=True)
 
     def nuke_EAC(self, sender):
@@ -293,16 +425,23 @@ class SCFF(QMainWindow):
             enviro_list.append("PTU")
         if self.cb_EAC_EPTU.isChecked():
             enviro_list.append("EPTU")
+        checklist=[]
+
+        if sender_object == 'pb_EAC_SC' and len(enviro_list) == 0:
+            self.info("No environment selected.")
+            return
 
         # Nuke the EAC folders in the SC directories
         if sender_object == 'pb_EAC_SC' or sender_object == 'pb_EAC_all':
             for env in enviro_list:
                 print(f"Deleting EAC for {env}")
                 scrub_folder(os.path.join(self.main_directory, "StarCitizen", env, "EasyAntiCheat"))
+                checklist.append(env)
 
         # Nuke the EAC folder in appdata roaming
         if sender_object == 'pb_EAC_roaming' or sender_object == 'pb_EAC_all':
             scrub_folder(self.eac_roaming)
+            checklist.append('AppData\\Roaming')
 
         # Nuke the EasyAntiCheat_EOS.sys file in program files
         # This requires admin privileges
@@ -314,7 +453,9 @@ class SCFF(QMainWindow):
                 if ctypes.windll.shell32.IsUserAnAdmin():
                     if os.path.exists(PATH):
                         os.remove(PATH)
+                        checklist.append('Program Files')
                 else:
+                    self.info("Incorrect permissions. Please run the program as an administrator and try again.",'')
                     msg = QMessageBox()
                     msg.setIcon(QMessageBox.Critical)
                     msg.setText("Error when attempting to nuke EAC in the Program Files (x86) folder...\n"
@@ -330,27 +471,82 @@ class SCFF(QMainWindow):
                             "--___--")
                 msg.setWindowTitle("Error")
                 msg.exec_()
+        self.info(f'Nuking EAC is complete!',f'Locations liberated: {", ".join(checklist)}')
+        # msg = QMessageBox()
+        # msg.setIcon(QMessageBox.Information)
+        # msg.setText("Nuking EAC is complete!")
+        # msg.setWindowTitle("Nuking EAC")
+        # msg.exec_()
 
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setText("Nuking EAC is complete!")
-        msg.setWindowTitle("Nuking EAC")
-        msg.exec_()
+    def close_launcher_thread(self):
+        is_thread = isinstance(threading.current_thread(), QThread)
+        if is_thread:
+            print("Closing launcher from within a thread")
+
+        handle, exe = LauncherHelper.launcher_properties()
+        self.launcher_handle = handle
+        self.launcher_exe = exe
+        LauncherHelper.close_launcher(handle)
+
+    def open_launcher_thread(self):
+        if self.launcher_exe:
+            LauncherHelper.open_launcher(self.launcher_exe)
+        else:
+            o.error("Launcher exe not found. It may not have been running yet.")
 
     def close_launcher(self):
         """
         Close the launcher using the LauncherHelper module.
         """
-        handle, _ = LauncherHelper.launcher_properties()
-        LauncherHelper.close_launcher(handle)
+        i_string="Closing launcher and all launcher processes."
+        print("Labels text:")
+        print(self.l_info_1.text())
+        print(self.l_info_2.text())
+
+        if self.l_info_2.text()==" ":
+            self.info(t2=i_string)
+        else:
+            self.info(t1=i_string)
+        QApplication.processEvents()
+
+
+
+        thread = Task(self.close_launcher_thread)
+        # self.thread_pool.\
+        pool.start(thread)
 
     def relaunch_launcher(self):
+
+        self.info("Please wait for launcher to restart...", ' ')
+        QApplication.processEvents()
+
+        self.close_launcher()
+
+        # thread1 = Task(self.close_launcher_thread)
+        # pool.start(thread1)
+
+        pool.waitForDone()
+
+        thread2 = Task(self.open_launcher_thread)
+        pool.start(thread2)
+
+        pool.waitForDone()
+        self.info(t1="Launcher restarted.",t2='')
+
+        # self.relaunch_launcher_manager()
+
+    def relaunch_launcher_manager(self):
         """
         Relaunch the launcher using the LauncherHelper module.
         """
-        handle, exe = LauncherHelper.launcher_properties()
-        LauncherHelper.close_launcher(handle)
-        LauncherHelper.open_launcher(exe)
+
+        thread1 = Task(self.close_launcher_thread)
+        pool.start(thread1)
+
+        pool.waitForDone()
+
+        thread2 = Task(self.open_launcher_thread)
+        pool.start(thread2)
 
     def reset_launcher(self, deep_clean):
         """
@@ -370,7 +566,8 @@ class SCFF(QMainWindow):
 
         # For testing purposes, skip the deletion of the launcher items
         skip = False
-
+        self.info(clear_unused=True)
+        self.info(t1="Resetting and restarting launcher. Please wait...")
         if not skip:
             if deep_clean:
                 # shutil.rmtree(launcher_roaming_dir)
@@ -388,21 +585,29 @@ class SCFF(QMainWindow):
 
         print("Reopening launcher")
         LauncherHelper.open_launcher(launcher_exe)
+        self.info(t2="Done!")
 
-    def prep_test_data(self):
-        """
-        Copy test data from a source directory to the test directory.
-        """
-        src_directory = fr"C:\Users\{self.current_user}\PycharmProjects\ChatGPTStuff\sc_file_management\SCFileTools\testdata"
-        for root, dirs, files in os.walk(src_directory):
-            relative_dir = os.path.relpath(root, src_directory)
-            dest_dir = os.path.join(self.test_directory, relative_dir)
-            os.makedirs(dest_dir, exist_ok=True)
-            for file in files:
-                src_file = os.path.join(root, file)
-                dest_file = os.path.join(dest_dir, file)
-                shutil.copy2(src_file, dest_file)
-                print(f"Copied file: {dest_file}")
+    def info(self, t1=None, t2=None, preset=None, clear_unused=False):
+
+        def l1(txt):
+            self.l_info_1.setText(str(txt))
+
+        def l2(txt):
+            self.l_info_2.setText(str(txt))
+
+        if preset is not None:
+            if preset == 0:
+                l1("Welcome!")
+                l2('')
+        else:
+            if t1 is not None:
+                l1(t1)
+            if clear_unused and t2 is None:
+                l2('')
+            if t2 is not None:
+                l2(t2)
+            if clear_unused and t1 is None:
+                l1('')
 
     def mouse_press_event_frame(self, event):
         """
@@ -454,6 +659,7 @@ class SCFF(QMainWindow):
         if event.button() == Qt.LeftButton:
             self.dragging_offset = None
             event.accept()
+
     def toggle_elements(self):
         if self.is_title_bar_hidden:
             self.l_testDir.hide()
@@ -463,6 +669,7 @@ class SCFF(QMainWindow):
             self.l_testDir.show()
             self.pb_setTestDir.show()
             self.pb_prepTest.show()
+
     def toggle_title_bar(self):
         """
         Toggle the visibility of the title bar and testing elements.
@@ -472,8 +679,20 @@ class SCFF(QMainWindow):
         self.setWindowFlag(Qt.FramelessWindowHint, self.is_title_bar_hidden)
         self.show()
 
+    def closeEvent(self, event):
+        """
+        Handle the close event on the window.
+
+        Args:
+            event (QCloseEvent): Close event.
+        """
+        o.info(f"Number of threads in the pool: {self.thread_pool.activeThreadCount()}")
+        self.thread_pool.clear()
+        event.accept()
+
 
 if __name__ == '__main__':
+    pool=QThreadPool()
     app = QApplication(sys.argv)
     qsspath = get_resource_path("IC1a.qss")
     try:

@@ -38,7 +38,8 @@ def close_launcher(window_handle):
 
 def open_launcher(executable_location):
     if executable_location:
-        subprocess.Popen(executable_location)
+        subprocess.Popen(executable_location, shell=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 
 
 if __name__ == '__main__':
