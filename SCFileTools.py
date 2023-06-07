@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 o = logging.getLogger(__name__)
 
 import LauncherHelper
+import settings
 
 
 def exception_hook(type, value, traceback):
@@ -46,9 +47,10 @@ def scrub_folder(folder):
     Args:
         folder (str): Path to the folder to be scrubbed.
     """
-    # Check if folder exists
+
     if not os.path.exists(folder):
-        return
+
+        return 'path'
 
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
@@ -139,8 +141,12 @@ class SCFF(QMainWindow):
 
 
         uipath = get_resource_path("form.ui")
+
         loadUi(uipath, self)
 
+        self.residence = get_resource_path(os.getcwd())
+        settings.ini_info()
+        values=settings.read()
 
         self.info_signal.connect(self.info)
 
@@ -148,18 +154,18 @@ class SCFF(QMainWindow):
 
         self.rctime = 0
 
-        self.main_directory = r"F:\Games\Roberts Space Industries"
-        self.shaders_directory = os.path.join(os.getenv('LOCALAPPDATA'), "Star Citizen")
+        self.main_directory = values['rsi_path']
+        self.shaders_directory = values['shaders_path']
 
         self.LIVE_directory = os.path.join(self.main_directory, "StarCitizen", "LIVE")
         self.PTU_directory = os.path.join(self.main_directory, "StarCitizen", "PTU")
         self.EPTU_directory = os.path.join(self.main_directory, "StarCitizen", "EPTU")
 
         # EAC directories
-        self.eac_roaming = os.path.join(os.getenv('APPDATA'), "EasyAntiCheat")
-        self.eac_programFiles = os.path.join(os.getenv('ProgramFiles(x86)'), "EasyAntiCheat_EOS")
+        self.eac_roaming = values['eac_roaming_path']
+        self.eac_programFiles = values['eac_programfiles_path']
 
-        self.launcher_roaming = os.path.join(os.getenv('APPDATA'), "rsilauncher")
+        self.launcher_roaming = values['launcher_roaming_path']
 
         self.RSIPrefix = "RSI: "
         self.shadersPrefix = "Shaders: "
@@ -242,7 +248,9 @@ class SCFF(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Select Main Directory")
         if directory:
             self.main_directory = directory
+            settings.write_one('rsi_path', directory)
             self.l_path_main.setText(self.RSIPrefix + directory)
+
 
     def select_shaders_directory(self):
         """
@@ -251,6 +259,7 @@ class SCFF(QMainWindow):
         directory = QFileDialog.getExistingDirectory(self, "Select Shaders Directory")
         if directory:
             self.shaders_directory = directory
+            settings.write_one('shaders_path', directory)
             username = os.path.split(os.path.expanduser("~"))[-1]
             display_directory = self.shaders_directory.replace(username, "[user]")
             self.l_path_shaders.setText(self.shadersPrefix + display_directory)
@@ -428,14 +437,19 @@ class SCFF(QMainWindow):
         checklist=[]
 
         if sender_object == 'pb_EAC_SC' and len(enviro_list) == 0:
-            self.info("No environment selected.")
+            self.info("No environment selected.",'')
             return
 
         # Nuke the EAC folders in the SC directories
         if sender_object == 'pb_EAC_SC' or sender_object == 'pb_EAC_all':
             for env in enviro_list:
-                print(f"Deleting EAC for {env}")
-                scrub_folder(os.path.join(self.main_directory, "StarCitizen", env, "EasyAntiCheat"))
+
+                print(f"Main directory currently set to: {self.main_directory}")
+                _ = scrub_folder(os.path.join(self.main_directory, "StarCitizen", env, "EasyAntiCheat"))
+                if _ == 'path':
+                    self.info(f"Problem finding EAC in {env}...", 'Check your RSI directory setting, or verify that the EAC folder exists.')
+                    if sender_object == 'pb_EAC_SC':
+                        return
                 checklist.append(env)
 
         # Nuke the EAC folder in appdata roaming
@@ -479,10 +493,6 @@ class SCFF(QMainWindow):
         # msg.exec_()
 
     def close_launcher_thread(self):
-        is_thread = isinstance(threading.current_thread(), QThread)
-        if is_thread:
-            print("Closing launcher from within a thread")
-
         handle, exe = LauncherHelper.launcher_properties()
         self.launcher_handle = handle
         self.launcher_exe = exe
@@ -516,6 +526,10 @@ class SCFF(QMainWindow):
         pool.start(thread)
 
     def relaunch_launcher(self):
+        handle, exe = LauncherHelper.launcher_properties()
+        if not handle:
+            self.info("Launcher not running.",'')
+            return
 
         self.info("Please wait for launcher to restart...", ' ')
         QApplication.processEvents()
