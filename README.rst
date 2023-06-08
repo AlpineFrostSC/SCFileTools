@@ -95,8 +95,11 @@ Dependencies can be found in the `requirements.txt` file.
 
 *For the portable executable, just grab it and run it!*
 
+
 Fancy portable executable
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 For Windows. What, you expected something else?
 
 **No dependencies or external files required!**
@@ -110,6 +113,7 @@ For Windows. What, you expected something else?
 
 Git clone
 ~~~~~~~~~
+
 Probably also exclusively for Windows. Otherwise, this is a rabbit hole for *you* to squeeze your way through.
 
 1. Installation:
@@ -130,7 +134,7 @@ Some Guidance
 Let's take a look at the sections you see on the main window and the functions that those provide.
 
 First, please note the "Running as:" in the tile bar of the program. This indicates whether you have run the program as
-ADMIN or not. **This is an important point for one or more functions of the program.** But otherwise not a big deal.
+ADMIN or not. **This is an important point for at least one feature of the program.** But otherwise not a big deal. 
 
 1. **Folder Paths**
     - These couple of lines allow you to choose where your main RSI directory and Shaders folders exist.
