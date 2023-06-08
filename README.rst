@@ -1,4 +1,30 @@
 =======================================
+Please be aware:
+=======================================
+
+The initial portable releases of this tool have been causing issues related to false malware flags, so I've removed them.
+
+This is due to the use of pyinstaller to bundle the python code into a single file that can be run without the user needing to manually install any additional python dependencies. Windows defender and other 
+
+AV programs just don't like this stuff for whatever misguided reason.
+
+Some reading material:
+
+https://medium.com/@markhank/how-to-stop-your-python-programs-being-seen-as-malware-bfd7eb407a7
+
+https://python.plainenglish.io/pyinstaller-exe-false-positive-trojan-virus-resolved-b33842bd3184
+
+``That said...`` If you encounter these issues and have concerns about it, certainly don't hesitate stop what you're doing and let your AV do its job. Nobody should feel compelled to deal with the burden of an unhappy antivirus if they're not comfortable doing so! This tool doesn't do much more than the routine activities you already engage in, so you can rest easy you're not missing out on anything new if you choose to avoid using it. :)
+
+____
+
+____
+
+____
+
+
+
+=======================================
 SC File Fiddler ... *Fiddle around and find out!*
 =======================================
 
