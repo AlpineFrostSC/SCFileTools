@@ -91,24 +91,20 @@ Run it!
 -------
 For cloning and running the python directly:
 
-The only dependency I can think of off the top of my head is PyQT5. Feel free to have that already installed.
-Otherwise, it's in the requirements.txt
-I suppose you might also want to ensure that you have PowerShell installed in its default location if you want to use any of the features which
-depend on it.
+Dependencies can be found in the `requirements.txt` file.
 
 *For the portable executable, just grab it and run it!*
 
-Fancy portable executable (recommended!)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-For Windoze. What, you expected something else?
+Fancy portable executable
+~~~~~~~~~~~~~~~~~~~~~~~~~
+For Windows. What, you expected something else?
 
 **No dependencies or external files required!**
 
 1. Installation:
-    - No.
+    - Download the latest release (zipped bundle or standalone exe) executable from `where latest releases are born <https://github.com/AlpineFrostSC/SCFileTools/releases>`_.
 2. Run the Application:
-    - Download the latest release executable from `where latest releases are born <https://github.com/AlpineFrostSC/SCFileTools/releases>`_.
-    - Run the executable.
+    - Run the standalone executable, or unzip the bundle and run the executable.
     - That's it. You win.
 
 
@@ -138,9 +134,11 @@ ADMIN or not. **This is an important point for one or more functions of the prog
 
 1. **Folder Paths**
     - These couple of lines allow you to choose where your main RSI directory and Shaders folders exist.
-    - *You'll need to set the RSI directory yourself*, while the shaders directory is initially set to the default location.
-This assumes your game is installed inside the ``Roberts Space Industries`` folder somewhere. Additionally, if you don't
+    - *You'll need to set the RSI directory yourself* (this is where the StarCitizen folder is, containing your important game files), while the shaders directory is initially set to the default location.
+This assumes your game is installed inside the ``Roberts Space Industries`` folder somewhere, but you can set it to whatever directory your StarCitizen game folder exists in. Additionally, if you don't
 plan on fiddling with shaders, you can ignore the Shaders Directory line.
+
+
 
 2. **Shaders**
     - This section is for clearing out your shaders. You can either clear them all at once, or selectively clear them.
@@ -156,7 +154,7 @@ plan on fiddling with shaders, you can ignore the Shaders Directory line.
     - This section is for deleting a bunch of EasyAntiCheat stuff. EAC issues are somewhat common sources of issues
       when attempting to launch the game, and there are ``three locations`` where sneaky EAC files reside.
     - `"In SC Folders"` will delete the EAC folder contents within any of the selected environments immediately below the button.
-    - `"In AppData>Roaming"` will delete the EAC folder contents within the AppData\Roaming directory.
+    - `"In AppData>Roaming"` will delete the EAC folder contents within the AppData\\Roaming directory.
     - `"In Program Files"` will delete the ``EasyAntiCheat_EOS.sys`` file within the relevant Program Files (x86) subdirectory.
 
       + **Note: This one will require elevated permissions. You will need to run the program as ADMIN to allow this.**
@@ -174,9 +172,13 @@ plan on fiddling with shaders, you can ignore the Shaders Directory line.
         launcher reset, though substantially more thorough. **Launcher will be automatically closed during this process and then restarted.**
       + `Fully Close Launcher` will close the launcher window, and exit all remaining ``RSI Launcher.exe`` processes.
       + `Re-Launch Launcher` will close the launcher (using the method above), and then reopen it.
+      + `Refresh Launcher` sends a `Ctrl+R` to your launcher, to refresh it. This is a quick alternative to closing and reopening the launcher to see if a patch has dropped.
+
+        + `"Patch-watch mode"` option will keep sending refresh commands to your launcher *until you un-check it*. Handy if you're *really* eager to grab that patch ASAP!
 
 Some Mild Caveats
 ~~~~~~~~~~~~~~~~~
+
 Most of the functions provided by the Fiddler don't require any special permissions. That said, there are a few that do.
 At the moment, the one one that appears to require elevated permissions is deleting the EAC file within the
 Program Files directory.
@@ -193,7 +195,7 @@ This program is provided as-is. I'm not responsible for any damage that may occu
 your dog, or your Picos. Use at your own risk.
 
 With that out of the way, there shouldn't be much to lose sleep over. Most functions affect files and directories which
-are hard-coded (or nearly so), meaning the worst that is likely to happen is the functions will do what you expect them
+are hard-coded (or nearly so), defined by the user, or determined by windows variables, meaning the worst that is likely to happen is the functions will do what you expect them
 to do!
 
 Of course, it's still your job to `back up your files, and back up your backups`!
