@@ -1,0 +1,5 @@
+PyQt5~=5.15.0
+configparser~=5.2.0
+PyAutoGUI~=0.9.54
+psutil~=5.8.0
+pywin32~=228
