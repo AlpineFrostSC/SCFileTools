@@ -5,8 +5,7 @@ Please be aware:
 The initial portable releases of this tool have been causing issues related to false malware flags, so I've removed them.
 
 This is due to the use of pyinstaller to bundle the python code into a single file that can be run without the user needing to manually install any additional python dependencies. Windows defender and other 
-
-AV programs just don't like this stuff for whatever misguided reason.
+AV programs just don't like this stuff for whatever misguided reason, and unfortunately the false-flag issue with these python tools is nothing new.
 
 Some reading material:
 
